@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent: Misi Kolaborasi & Editing Konten Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b132b;
+            color: #f8fafc;
+            overflow-x: hidden;
+            perspective: 1000px;
+        }
+        
+        .glass-panel {
+            background: rgba(26, 38, 66, 0.8);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7);
+            transform-style: preserve-3d;
+        }
+
+        .cyber-glow {
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+        }
+
+        .cyber-button {
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cyber-button:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4);
+        }
+
+        .cyber-button:active:not(:disabled) {
+            transform: translateY(1px) scale(0.97);
+        }
+
+        /* Animations for correct/wrong */
+        .correct-anim {
+            animation: pulseGreen 0.6s ease-out;
+            background-color: #166534 !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 30px rgba(34, 197, 94, 0.6) !important;
+        }
+
+        .wrong-anim {
+            animation: pulseRed 0.6s ease-out;
+            background-color: #991b1b !important;
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.5) !important;
+        }
+
+        @keyframes pulseGreen {
+            0% { transform: scale(1); background-color: #1e293b; }
+            50% { transform: scale(1.04); background-color: #22c55e; }
+            100% { transform: scale(1); background-color: #166534; }
+        }
+
+        @keyframes pulseRed {
+            0% { transform: scale(1); background-color: #1e293b; }
+            50% { transform: scale(0.96); background-color: #ef4444; }
+            100% { transform: scale(1); background-color: #991b1b; }
+        }
+
+        /* Screen Transitions */
+        .fade-in {
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Staggered Options Animation */
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        /* Modal Pop Animation */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8) translateY(20px); }
+            60% { opacity: 1; transform: scale(1.04) translateY(-5px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-pop {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Shake animation for wrong answer */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Background Shapes */
+        .bg-shape {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            z-index: -1;
+            animation: float 14s infinite alternate ease-in-out;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px) scale(1) rotate(0deg); }
+            100% { transform: translateY(-80px) scale(1.25) rotate(45deg); }
+        }
+
+        /* Robot Hovering Animation */
+        .robot-hover {
+            animation: robotFloat 3.5s ease-in-out infinite;
+        }
+
+        @keyframes robotFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+
+        .robot-glow {
+            filter: drop-shadow(0 0 15px rgba(56, 189, 248, 0.6));
+        }
+
+        /* Route Trail / Mission Nodes */
+        .route-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            padding: 10px 0;
+        }
+
+        .route-line-bg {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(51, 65, 85, 0.8);
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        .route-line-progress {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #10b981);
+            transform: translateY(-50%);
+            z-index: 2;
+            transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.9);
+        }
+
+        .route-node {
+            position: relative;
+            z-index: 3;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #1e293b;
+            border: 2px solid #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #94a3b8;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .route-node.completed {
+            background: #10b981;
+            border-color: #34d399;
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+            transform: scale(1.05);
+        }
+
+        .route-node.active {
+            background: #3b82f6;
+            border-color: #60a5fa;
+            color: #ffffff;
+            box-shadow: 0 0 18px rgba(59, 130, 246, 0.9);
+            transform: scale(1.25);
+            animation: pulseNode 1.5s infinite;
+        }
+
+        @keyframes pulseNode {
+            0%, 100% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.8); }
+            50% { box-shadow: 0 0 22px rgba(59, 130, 246, 1), 0 0 32px rgba(168, 85, 247, 0.7); }
+        }
+
+        /* Speech Bubble Tail */
+        .speech-bubble {
+            position: relative;
+        }
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 20px;
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-right: 10px solid rgba(15, 23, 42, 0.9);
+        }
+        @media (max-width: 640px) {
+            .speech-bubble::before {
+                left: 20px;
+                top: -10px;
+                border-left: 8px solid transparent;
+                border-right: 8px solid transparent;
+                border-bottom: 10px solid rgba(15, 23, 42, 0.9);
+                border-top: none;
+            }
+        }
+
+        /* Particles Container */
+        #particles-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .particle {
+            position: absolute;
+            background-color: rgba(56, 189, 248, 0.25);
+            border-radius: 50%;
+            animation: rise linear infinite;
+        }
+        @keyframes rise {
+            from { transform: translateY(100vh) scale(0); opacity: 0; }
+            50% { opacity: 1; }
+            to { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 relative">
+
+    <!-- Animated Background -->
+    <div id="particles-container"></div>
+    <div class="bg-shape bg-cyan-600/25 w-[420px] h-[420px] top-[-10%] left-[-10%]"></div>
+    <div class="bg-shape bg-purple-600/20 w-[520px] h-[520px] bottom-[-10%] right-[-10%]" style="animation-delay: -5s; animation-duration: 16s;"></div>
+    <div class="bg-shape bg-indigo-600/20 w-[320px] h-[320px] top-[40%] left-[35%]" style="animation-delay: -2s; animation-duration: 9s;"></div>
+
+    <div id="app" class="w-full max-w-4xl glass-panel rounded-3xl p-6 sm:p-10 fade-in relative z-10">
+        
+        <!-- Screen 1: Start Menu -->
+        <div id="start-screen" class="text-center space-y-6">
+            <div class="flex justify-center items-center mb-2">
+                <div class="robot-hover robot-glow bg-slate-900/90 p-4 rounded-full border-2 border-cyan-400/80 shadow-2xl relative">
+                    <svg id="start-robot-svg" class="w-24 h-24" viewBox="0 0 100 100">
+                        <!-- Head -->
+                        <rect x="20" y="25" width="60" height="45" rx="14" fill="#1e293b" stroke="#38bdf8" stroke-width="3"/>
+                        <!-- Antenna -->
+                        <line x1="50" y1="25" x2="50" y2="12" stroke="#38bdf8" stroke-width="3" />
+                        <circle cx="50" cy="10" r="5" fill="#f43f5e" class="animate-ping" />
+                        <circle cx="50" cy="10" r="5" fill="#38bdf8" />
+                        <!-- Screen Visor -->
+                        <rect x="28" y="33" width="44" height="22" rx="7" fill="#0f172a" />
+                        <!-- Eyes Happy -->
+                        <path d="M 35 44 Q 40 37 45 44" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round" />
+                        <path d="M 55 44 Q 60 37 65 44" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round" />
+                        <!-- Mouth -->
+                        <rect x="42" y="60" width="16" height="3" rx="1.5" fill="#38bdf8" />
+                        <!-- Cheeks -->
+                        <circle cx="32" cy="50" r="3" fill="#f43f5e" opacity="0.6" />
+                        <circle cx="68" cy="50" r="3" fill="#f43f5e" opacity="0.6" />
+                    </svg>
+                </div>
+            </div>
+            <h1 class="text-3xl sm:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-indigo-300 to-purple-400 pb-2 leading-tight">
+                AI Agent: Misi Kolaborasi & Editing Konten Digital
+            </h1>
+            <p class="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+                Bergabunglah bersama <span class="text-cyan-400 font-bold">FUOR</span>, Robot AI pendampingmu, untuk menguasai strategi kolaborasi manusia-AI, teknik editing media, etika hak cipta, hingga diseminasi konten!
+            </p>
+            
+            <div class="max-w-md mx-auto space-y-4 text-left bg-slate-900/80 p-5 rounded-2xl border border-slate-700/70 shadow-xl my-4">
+                <div>
+                    <label for="student-name" class="block text-sm font-semibold text-cyan-300 mb-1.5">Nama Lengkap Siswa</label>
+                    <input type="text" id="student-name" placeholder="Masukkan nama lengkap Anda..." class="w-full bg-slate-800/90 border border-slate-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-white rounded-xl px-4 py-2.5 outline-none transition text-sm">
+                </div>
+                <div>
+                    <label for="student-class" class="block text-sm font-semibold text-cyan-300 mb-1.5">Kelas</label>
+                    <select id="student-class" class="w-full bg-slate-800/90 border border-slate-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-white rounded-xl px-4 py-2.5 outline-none transition text-sm">
+                        <option value="" disabled selected>-- Pilih Kelas --</option>
+                        <option value="XI-1">XI-1</option>
+                        <option value="XI-2">XI-2</option>
+                        <option value="XI-3">XI-3</option>
+                        <option value="XI-4">XI-4</option>
+                        <option value="XI-A1">XI-A1</option>
+                    </select>
+                </div>
+                <div id="input-error" class="text-rose-400 text-xs hidden flex items-center gap-1.5 font-medium">
+                    <svg class="w-4 h-4 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Harap isi Nama Lengkap dan pilih Kelas terlebih dahulu!</span>
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button onclick="startGame()" class="cyber-button bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg hover:shadow-cyan-500/40 w-full sm:w-auto transform transition">
+                    MULAI PETUALANGAN MISI
+                </button>
+            </div>
+            <p class="text-slate-400 text-xs mt-4 tracking-widest uppercase font-semibold">Materi BAB I - Koding & Kecerdasan Artifisial Kelas XI</p>
+        </div>
+
+        <!-- Screen 2: Game Area -->
+        <div id="game-screen" class="hidden flex-col h-full">
+            <!-- Header (Score & Info) -->
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-2 mb-4 border-b border-slate-700/60 pb-3">
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-2 text-cyan-400 font-bold bg-cyan-950/50 px-4 py-2 rounded-full border border-cyan-800/60 shadow-md">
+                        <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <span id="score-display" class="tracking-wide">Skor: 0</span>
+                    </div>
+                    <div class="text-xs text-cyan-200 bg-slate-800/80 px-3.5 py-1.5 rounded-full border border-slate-700 font-medium truncate max-w-[200px] sm:max-w-none">
+                        Agen: <span id="header-student-info" class="font-bold text-white">-</span>
+                    </div>
+                </div>
+                <div class="text-slate-300 font-medium bg-slate-800/60 px-4 py-2 rounded-full border border-slate-700 text-sm sm:text-base">
+                    Pos Misi <span id="question-number" class="text-cyan-400 font-bold">1</span> dari <span id="total-questions">10</span>
+                </div>
+            </div>
+
+            <!-- Route Map Waypoints -->
+            <div class="mb-5 bg-slate-900/70 p-4 rounded-2xl border border-slate-800">
+                <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2 flex items-center justify-between">
+                    <span>Peta Ekspedisi Editing & AI</span>
+                    <span id="route-status-text" class="text-cyan-400 font-bold">Lokasi: Pos 1</span>
+                </div>
+                <div class="route-container px-2">
+                    <div class="route-line-bg"></div>
+                    <div id="route-line-progress" class="route-line-progress" style="width: 0%;"></div>
+                    <div id="route-nodes-wrapper" class="w-full flex justify-between relative z-10">
+                        <!-- Route nodes dynamically rendered -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Robot Companion & Dialogue Box -->
+            <div class="flex flex-col sm:flex-row items-center gap-4 mb-5 bg-slate-900/80 p-4 rounded-2xl border border-slate-700/60 shadow-lg">
+                <div class="robot-hover shrink-0 relative">
+                    <div class="w-20 h-20 bg-slate-950/90 rounded-full border-2 border-cyan-400/80 flex items-center justify-center robot-glow shadow-lg">
+                        <svg id="kreato-svg" class="w-16 h-16" viewBox="0 0 100 100">
+                            <!-- SVG dynamically rendered -->
+                        </svg>
+                    </div>
+                    <span class="absolute -bottom-1 bg-cyan-500 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full left-1/2 -translate-x-1/2 tracking-wider">KREATO</span>
+                </div>
+                <div class="speech-bubble bg-slate-900/90 border border-cyan-500/30 p-3.5 rounded-xl text-slate-200 text-sm sm:text-base w-full shadow-inner">
+                    <p id="kreato-dialogue" class="leading-relaxed text-cyan-100 italic">
+                        "Halo Agen Kreator! Saya KREATO. Mari bedah skenario berikut dan tentukan keputusan paling tepat!"
+                    </p>
+                </div>
+            </div>
+
+            <!-- Question Container -->
+            <div id="question-container" class="mb-5 bg-slate-800/50 p-5 rounded-2xl border border-slate-700/60 shadow-md">
+                <h2 id="question-text" class="text-lg sm:text-xl font-bold text-white leading-relaxed tracking-tight">
+                    Memuat tantangan...
+                </h2>
+            </div>
+
+            <!-- Options Grid -->
+            <div id="options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-4">
+                <!-- Buttons dynamically generated -->
+            </div>
+        </div>
+
+        <!-- Feedback Modal -->
+        <div id="feedback-modal" class="hidden bg-slate-900/95 border-2 border-cyan-500/60 rounded-2xl p-6 mt-4 relative shadow-2xl backdrop-blur-md">
+            <h3 id="feedback-title" class="text-xl font-bold mb-3 flex items-center">
+                <!-- Title injected via JS -->
+            </h3>
+            <p id="feedback-text" class="text-slate-200 leading-relaxed mb-5 text-sm sm:text-base">
+                <!-- Explanation injected via JS -->
+            </p>
+            <button onclick="nextQuestion()" class="cyber-button bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-3 px-8 rounded-xl float-right shadow-lg shadow-cyan-500/20">
+                Lanjut ke Pos Berikutnya &rarr;
+            </button>
+            <div class="clear-both"></div>
+        </div>
+
+        <!-- Screen 3: End Screen -->
+        <div id="end-screen" class="hidden text-center space-y-6">
+            <div id="result-icon" class="inline-block p-6 rounded-full mb-2 animate-bounce" style="animation-duration: 2s;">
+                <!-- Icon injected based on score -->
+            </div>
+            <h1 class="text-3xl sm:text-5xl font-black text-white">Ekspedisi Misi Selesai!</h1>
+            <p class="text-slate-300 text-base sm:text-lg">Seluruh titik rute materi Bab I telah berhasil dieksplorasi.</p>
+            
+            <div class="bg-slate-900/90 backdrop-blur-md p-8 rounded-3xl border border-slate-700 max-w-sm mx-auto shadow-2xl transform transition hover:scale-105">
+                <div class="border-b border-slate-700/80 pb-3 mb-4 text-left">
+                    <div class="text-xs text-cyan-400 font-semibold uppercase tracking-wider">Identitas Agen Siswa</div>
+                    <div id="end-student-name" class="text-lg font-bold text-white truncate">Nama Siswa</div>
+                    <div id="end-student-class" class="text-sm text-slate-300">Kelas: -</div>
+                </div>
+                <div class="text-slate-400 mb-2 uppercase tracking-widest text-xs font-bold">Skor Akhir Agen</div>
+                <div id="final-score" class="text-6xl sm:text-7xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-400 to-teal-400">
+                    0
+                </div>
+                <div id="score-message" class="mt-4 text-white font-bold text-lg">
+                    <!-- Message based on score -->
+                </div>
+                
+                <div id="submit-status" class="mt-4 pt-3 border-t border-slate-700/60 text-xs text-slate-400 flex items-center justify-center gap-1.5 hidden">
+                    <!-- Status Apps Script -->
+                </div>
+            </div>
+
+            <div class="pt-4">
+                <button onclick="resetGame()" class="cyber-button bg-slate-800 text-white border border-slate-600 hover:bg-slate-700 font-bold py-3.5 px-10 rounded-full mr-2 shadow-lg text-base">
+                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Ulangi Petualangan
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let studentName = "";
+        let studentClass = "";
+
+        // =========================================================================
+        // 📍 GOOGLE APPS SCRIPT URL:
+        // Masukkan URL Web App (/exec) dari Google Apps Script untuk rekapan nilai
+        // =========================================================================
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyrRByaDzJuvd0IYjJOGha9D7Dz5MFoDhG4n9DY1rWl8rbvJTxN1L2oW8H6N0LeiNC6/exec";
+
+        // Robot Expressions SVG Path
+        const robotExpressions = {
+            THINKING: `
+                <rect x="20" y="25" width="60" height="45" rx="14" fill="#1e293b" stroke="#38bdf8" stroke-width="3"/>
+                <line x1="50" y1="25" x2="50" y2="12" stroke="#38bdf8" stroke-width="3" />
+                <circle cx="50" cy="10" r="5" fill="#38bdf8" class="animate-pulse" />
+                <rect x="28" y="33" width="44" height="22" rx="7" fill="#0f172a" />
+                <circle cx="42" cy="41" r="3.5" fill="#38bdf8" />
+                <circle cx="62" cy="41" r="3.5" fill="#38bdf8" />
+                <line x1="42" y1="61" x2="58" y2="61" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+            `,
+            HAPPY: `
+                <rect x="20" y="25" width="60" height="45" rx="14" fill="#1e293b" stroke="#22c55e" stroke-width="3"/>
+                <line x1="50" y1="25" x2="50" y2="12" stroke="#22c55e" stroke-width="3" />
+                <circle cx="50" cy="10" r="5" fill="#22c55e" class="animate-ping" />
+                <rect x="28" y="33" width="44" height="22" rx="7" fill="#0f172a" />
+                <path d="M 35 44 Q 40 37 45 44" fill="none" stroke="#22c55e" stroke-width="3.5" stroke-linecap="round" />
+                <path d="M 55 44 Q 60 37 65 44" fill="none" stroke="#22c55e" stroke-width="3.5" stroke-linecap="round" />
+                <path d="M 40 58 Q 50 66 60 58" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="32" cy="51" r="3" fill="#22c55e" opacity="0.6" />
+                <circle cx="68" cy="51" r="3" fill="#22c55e" opacity="0.6" />
+            `,
+            SAD: `
+                <rect x="20" y="25" width="60" height="45" rx="14" fill="#1e293b" stroke="#ef4444" stroke-width="3"/>
+                <line x1="50" y1="25" x2="50" y2="12" stroke="#ef4444" stroke-width="3" />
+                <circle cx="50" cy="10" r="5" fill="#ef4444" />
+                <rect x="28" y="33" width="44" height="22" rx="7" fill="#0f172a" />
+                <path d="M 36 39 L 44 47 M 44 39 L 36 47" stroke="#ef4444" stroke-width="3" stroke-linecap="round" />
+                <path d="M 56 39 L 64 47 M 64 39 L 56 47" stroke="#ef4444" stroke-width="3" stroke-linecap="round" />
+                <path d="M 42 63 Q 50 56 58 63" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+            `
+        };
+
+        const robotTips = [
+            "Pahami posisi manusia dan KA dalam kuadran kolaborasi sebelum mengambil keputusan!",
+            "Ingat! Human-in-the-Loop (HITL) menempatkan pengawasan manusia di setiap langkah kunci.",
+            "Descript sangat unik karena dapat memotong suara cukup dengan mengedit teks transkripnya!",
+            "Jangan keliru! Lisensi CC BY-NC-SA mewajibkan atribut non-komersial dan lisensi serupa.",
+            "Kecerdasan Augmentatif (Augmented Intelligence) bertujuan memperkuat kemampuan manusia, bukan menggantikannya.",
+            "Fitur Upscaling AI memperjelas resolusi gambar tanpa menghilangkan detail penting.",
+            "Tahap pertama kolaborasi kreator dan AI selalu dimulai dari Ide dan Input Kreator!",
+            "Adobe Enhance Speech sangat efektif menghilangkan noise vokal hingga seperti rekaman studio.",
+            "Diseminasi konten bertujuan memperluas jangkauan dan memperkuat branding audiens target.",
+            "Langkah proyek kolaborasi diawali perencanaan dan riset sebelum masuk tahap produksi!"
+        ];
+
+        function setKreatoState(expression, text) {
+            const svgEl = document.getElementById('kreato-svg');
+            const textEl = document.getElementById('kreato-dialogue');
+            if (svgEl && robotExpressions[expression]) {
+                svgEl.innerHTML = robotExpressions[expression];
+            }
+            if (textEl) {
+                textEl.textContent = `"${text}"`;
+            }
+        }
+
+        // Render Route Map Waypoints
+        function initRouteMap() {
+            const nodesWrapper = document.getElementById('route-nodes-wrapper');
+            if (!nodesWrapper) return;
+            nodesWrapper.innerHTML = '';
+
+            for (let i = 0; i < questionsData.length; i++) {
+                const node = document.createElement('div');
+                node.id = `route-node-${i}`;
+                node.className = 'route-node';
+                node.textContent = i + 1;
+                nodesWrapper.appendChild(node);
+            }
+        }
+
+        function updateRouteMap(currentIndex) {
+            const total = questionsData.length;
+            const progressLine = document.getElementById('route-line-progress');
+            const statusText = document.getElementById('route-status-text');
+
+            if (progressLine) {
+                const progressPercent = (currentIndex / (total - 1)) * 100;
+                progressLine.style.width = `${progressPercent}%`;
+            }
+
+            if (statusText) {
+                statusText.textContent = `Lokasi: Pos ${currentIndex + 1} dari ${total}`;
+            }
+
+            for (let i = 0; i < total; i++) {
+                const node = document.getElementById(`route-node-${i}`);
+                if (!node) continue;
+
+                if (i < currentIndex) {
+                    node.className = 'route-node completed';
+                    node.innerHTML = '✓';
+                } else if (i === currentIndex) {
+                    node.className = 'route-node active';
+                    node.textContent = i + 1;
+                } else {
+                    node.className = 'route-node';
+                    node.textContent = i + 1;
+                }
+            }
+        }
+
+        // Generate Background Particles
+        function createParticles() {
+            const container = document.getElementById('particles-container');
+            const particleCount = 20;
+            for(let i=0; i<particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 8 + 2;
+                const left = Math.random() * 100;
+                const duration = Math.random() * 10 + 5;
+                const delay = Math.random() * 5;
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${left}%`;
+                particle.style.animationDuration = `${duration}s`;
+                particle.style.animationDelay = `${delay}s`;
+                
+                container.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // Data Pertanyaan Berdasarkan PPT BAB I
+        const questionsData = [
+            {
+                question: "Seorang desainer menggunakan AI untuk membuat beberapa draft awal tata letak (layout) brosur. Setelah draft dihasilkan, desainer memilih, mengubah warna, dan menyempurnakannya sesuai preferensi klien. Berdasarkan Kuadran Kolaborasi Manusia dan KA, kasus ini termasuk dalam...",
+                options: [
+                    { text: "Kuadran I – Manusia Dominan (AI-Assisted)", correct: true },
+                    { text: "Kuadran II – KA Dominan (Human-Monitoring)", correct: false },
+                    { text: "Kuadran III – Kolaboratif Seimbang", correct: false },
+                    { text: "Kuadran IV – Otomatisasi Penuh (No Human-in-the-Loop)", correct: false }
+                ],
+                explanation: "Pada Kuadran I (Manusia Dominan / AI-Assisted), manusia memegang kendali utama dalam keputusan dan eksekusi kreatif, sedangkan KA hanya berfungsi sebagai alat bantu pembuat draft awal atau pembuat ide."
+            },
+            {
+                question: "Model kolaborasi Manusia dan Kecerdasan Artifisial di mana manusia melakukan intervensi langsung, memberikan validasi, atau persetujuan di setiap tahapan keputusan penting dipahami sebagai...",
+                options: [
+                    { text: "Human-out-of-the-Loop", correct: false },
+                    { text: "Human-in-the-Loop (HITL)", correct: true },
+                    { text: "Human-on-the-Loop (HOTL)", correct: false },
+                    { text: "Autonomous Agent System", correct: false }
+                ],
+                explanation: "Human-in-the-Loop (HITL) memastikan manusia terus terlibat aktif pada alur kerja utama untuk menyetujui, mengoreksi, atau memvalidasi output sebelum dilanjutkan."
+            },
+            {
+                question: "Tim editor podcast ingin memotong kalimat yang salah bicara dari rekaman audio secara cepat tanpa harus menggeser wave audio satu per satu. Aplikasi AI yang memungkinkan editing audio berbasis teks transkrip adalah...",
+                options: [
+                    { text: "Auphonic", correct: false },
+                    { text: "Krisp", correct: false },
+                    { text: "Descript", correct: true },
+                    { text: "Adobe Enhance Speech", correct: false }
+                ],
+                explanation: "Descript memungkinkan pengguna melakukan editing audio dengan memotong atau menghapus kata pada teks transkrip, secara otomatis audio aslinya ikut terpotong."
+            },
+            {
+                question: "Sebuah studio animasi memanfaatkan teknologi AI yang mampu mengubah instruksi deskripsi teks tertulis menjadi cuplikan video pendek atau ilustrasi baru. Teknologi ini tergolong ke dalam jenis...",
+                options: [
+                    { text: "Smart Color Correction", correct: false },
+                    { text: "KA Generatif (Text-to-Image / Text-to-Video)", correct: true },
+                    { text: "Upscaling & Resolution Enhancement", correct: false },
+                    { text: "Optical Character Recognition (OCR)", correct: false }
+                ],
+                explanation: "KA Generatif (seperti Text-to-Image / Text-to-Video) bekerja dengan menganalisis instruksi teks (prompt) lalu memunculkan konten visual atau video baru yang belum pernah ada sebelumnya."
+            },
+            {
+                question: "Kreator konten ingin membagikan modul buklet buatannya di internet dengan ketentuan: Orang lain boleh membagikan dan mengubah karyanya, tetapi TIDAK BISA digunakan untuk tujuan komersial serta wajib membagikan ulang dengan lisensi serupa. Lisensi Creative Commons yang tepat adalah...",
+                options: [
+                    { text: "CC BY-ND", correct: false },
+                    { text: "CC BY-NC-SA", correct: true },
+                    { text: "CC BY-SA", correct: false },
+                    { text: "CC BY-NC-ND", correct: false }
+                ],
+                explanation: "CC BY-NC-SA memuat Atribusi (BY), NonKomersial (NC - tidak untuk jualan/profit), dan ShareAlike (SA - wajib dibagikan ulang dengan lisensi sejenis)."
+            },
+            {
+                question: "Dalam proses kolaborasi antara kreator digital dengan KA, langkah awal yang paling krusial sebelum KA mulai menjalankan otomatisasi editing adalah...",
+                options: [
+                    { text: "Pembersihan latar belakang otomatis", correct: false },
+                    { text: "Penyusunan konsep, ide, dan input prompt oleh kreator", correct: true },
+                    { text: "Evaluasi engagement dan konversi audiens", correct: false },
+                    { text: "Finalisasi rendering dan publikasi", correct: false }
+                ],
+                explanation: "Semua alur kerja AI dimulai dari 'Ide dan Input Kreator'. Kualitas prompt, pemahaman audiens, dan konsep awal manusia menentukan seberapa akurat hasil dari KA."
+            },
+            {
+                question: "Seorang videografer memiliki foto arsip sejarah beresolusi rendah dan buram. Fitur AI yang berfungsi meningkatkan kualitas resolusi gambar agar tampak tajam tanpa kehilangan detail adalah...",
+                options: [
+                    { text: "Automated Video Cutting", correct: false },
+                    { text: "Background Removal", correct: false },
+                    { text: "Upscaling / Enhancing Resolution", correct: true },
+                    { text: "Smart Color Correction", correct: false }
+                ],
+                explanation: "Upscaling / Enhancing Resolution berbasis KA menggunakan kecerdasan buatan untuk mereka ulang piksel yang hilang sehingga gambar menjadi tajam dan beresolusi tinggi."
+            },
+            {
+                question: "Untuk menghilangkan kebisingan suara latar belakang (noise seperti kipas atau kendaraan) secara langsung saat rapat online atau rekaman podcast secara real-time, aplikasi AI yang tepat digunakan adalah...",
+                options: [
+                    { text: "Krisp", correct: true },
+                    { text: "Photoshop", correct: false },
+                    { text: "Logic Pro", correct: false },
+                    { text: "Auphonic", correct: false }
+                ],
+                explanation: "Krisp dirancang khusus untuk membatalkan (suppress) noise latar belakang secara real-time saat microphone aktif digunakan dalam panggilan atau rekaman."
+            },
+            {
+                question: "Mengapa diseminasi konten digital sangat penting setelah seluruh tahapan editing dan penyempurnaan konten selesai dilaksanakan?",
+                options: [
+                    { text: "Agar ukuran file video mengecil secara otomatis", correct: false },
+                    { text: "Untuk memperluas jangkauan, memperkuat branding, dan memastikan konten berdampak pada audiens", correct: true },
+                    { text: "Agar lisensi hak cipta karya otomatis berubah menjadi domain publik", correct: false },
+                    { text: "Untuk menghapus riwayat revisi yang dilakukan oleh AI", correct: false }
+                ],
+                explanation: "Diseminasi adalah proses penyebaran/distribusi konten. Tanpa diseminasi yang terencana, konten berkualitas tidak akan mencapai target audiens atau memberikan dampak nyata."
+            },
+            {
+                question: "Dalam suatu proyek kolaborasi pembuatan konten digital tim, urutan tahapan yang terstruktur dan benar adalah...",
+                options: [
+                    { text: "Publikasi -> Perencanaan -> Editing -> Riset", correct: false },
+                    { text: "Perencanaan -> Riset & Konsep -> Produksi -> Editing -> Diseminasi & Evaluasi", correct: true },
+                    { text: "Editing -> Produksi -> Riset -> Perencanaan -> Evaluasi", correct: false },
+                    { text: "Diseminasi -> Editing -> Riset -> Produksi -> Publikasi", correct: false }
+                ],
+                explanation: "Alur proyek yang sistematis diawali dari Perencanaan & Riset, dilanjutkan Pengembangan Konsep, Produksi, Penyuntingan (Editing), Persiapan Diseminasi, Publikasi, hingga Evaluasi."
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let displayedScore = 0;
+        const scorePerQuestion = 10;
+        let isAnswering = false;
+
+        // DOM Elements
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        const questionContainer = document.getElementById('question-container');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const questionNumber = document.getElementById('question-number');
+        const totalQuestionsSpan = document.getElementById('total-questions');
+        const scoreDisplay = document.getElementById('score-display');
+        const feedbackModal = document.getElementById('feedback-modal');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackText = document.getElementById('feedback-text');
+
+        // Init
+        totalQuestionsSpan.textContent = questionsData.length;
+
+        function startGame() {
+            const nameInput = document.getElementById('student-name');
+            const classSelect = document.getElementById('student-class');
+            const inputError = document.getElementById('input-error');
+
+            if (!nameInput.value.trim() || !classSelect.value) {
+                if (inputError) inputError.classList.remove('hidden');
+                if (!nameInput.value.trim()) nameInput.classList.add('border-rose-500');
+                if (!classSelect.value) classSelect.classList.add('border-rose-500');
+                return;
+            }
+
+            if (inputError) inputError.classList.add('hidden');
+            nameInput.classList.remove('border-rose-500');
+            classSelect.classList.remove('border-rose-500');
+
+            studentName = nameInput.value.trim();
+            studentClass = classSelect.value;
+
+            document.getElementById('header-student-info').textContent = `${studentName} (${studentClass})`;
+            document.getElementById('end-student-name').textContent = studentName;
+            document.getElementById('end-student-class').textContent = `Kelas: ${studentClass}`;
+
+            startScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            gameScreen.classList.add('flex', 'fade-in');
+            initRouteMap();
+            resetState();
+            setTimeout(loadQuestion, 100);
+        }
+
+        function resetState() {
+            currentQuestionIndex = 0;
+            score = 0;
+            displayedScore = 0;
+            scoreDisplay.textContent = `Skor: ${score}`;
+        }
+
+        function loadQuestion() {
+            isAnswering = false;
+            
+            updateRouteMap(currentQuestionIndex);
+            const currentTip = robotTips[currentQuestionIndex] || "Analisis setiap opsi dengan teliti!";
+            setKreatoState('THINKING', `Pos Misi ${currentQuestionIndex + 1}: ${currentTip}`);
+
+            feedbackModal.classList.remove('animate-pop');
+            feedbackModal.classList.add('hidden');
+            
+            questionContainer.classList.remove('animate-shake');
+            
+            const currentQ = questionsData[currentQuestionIndex];
+            questionNumber.textContent = currentQuestionIndex + 1;
+            
+            questionText.style.opacity = 0;
+            questionText.textContent = currentQ.question;
+            setTimeout(() => {
+                questionText.style.transition = "opacity 0.4s ease";
+                questionText.style.opacity = 1;
+            }, 80);
+            
+            optionsContainer.innerHTML = '';
+
+            const shuffledOptions = [...currentQ.options].sort(() => Math.random() - 0.5);
+
+            shuffledOptions.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = `cyber-button bg-slate-800/80 backdrop-blur-sm border-2 border-slate-700 hover:border-cyan-400 text-left p-4 sm:p-5 rounded-2xl text-slate-200 font-medium w-full flex items-center justify-between group shadow-lg animate-slide-up`;
+                
+                btn.style.animationDelay = `${index * 0.12}s`;
+                
+                const letters = ['A', 'B', 'C', 'D'];
+                btn.innerHTML = `
+                    <div class="flex items-center w-full">
+                        <span class="bg-slate-700/80 text-cyan-400 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center mr-3.5 font-bold text-base sm:text-lg group-hover:bg-cyan-500 group-hover:text-slate-950 transition-colors shrink-0 shadow-inner">
+                            ${letters[index]}
+                        </span>
+                        <span class="leading-relaxed text-sm sm:text-base">${option.text}</span>
+                    </div>
+                `;
+
+                btn.onclick = () => selectAnswer(btn, option.correct, currentQ.explanation, shuffledOptions);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function animateScoreUp(targetScore) {
+            const step = Math.ceil((targetScore - displayedScore) / 15);
+            const timer = setInterval(() => {
+                displayedScore += step;
+                if (displayedScore >= targetScore) {
+                    displayedScore = targetScore;
+                    clearInterval(timer);
+                }
+                scoreDisplay.textContent = `Skor: ${displayedScore}`;
+            }, 30);
+        }
+
+        function selectAnswer(selectedBtn, isCorrect, explanation, renderedOptions) {
+            if (isAnswering) return;
+            isAnswering = true;
+
+            const allButtons = optionsContainer.querySelectorAll('button');
+            
+            allButtons.forEach((btn, idx) => {
+                btn.disabled = true;
+                btn.classList.remove('hover:border-cyan-400', 'cursor-pointer');
+                
+                const isThisBtnCorrect = renderedOptions[idx].correct;
+
+                if (isThisBtnCorrect) {
+                    btn.classList.add('bg-green-900/80', 'border-green-500', 'text-white', 'shadow-[0_0_20px_rgba(34,197,94,0.4)]');
+                    btn.querySelector('span').classList.replace('bg-slate-700/80', 'bg-green-600');
+                    btn.querySelector('span').classList.replace('text-cyan-400', 'text-white');
+                } else {
+                    btn.classList.add('opacity-40', 'scale-95');
+                    btn.style.transition = "all 0.4s ease";
+                }
+            });
+
+            if (isCorrect) {
+                selectedBtn.classList.remove('opacity-40', 'scale-95');
+                selectedBtn.classList.add('correct-anim');
+                
+                score += scorePerQuestion;
+                animateScoreUp(score);
+                
+                setKreatoState('HAPPY', "Luar biasa! Analisis teorimu sangat presisi! Pos Misi ini berhasil dikuasai!");
+
+                feedbackTitle.innerHTML = `<svg class="w-7 h-7 text-green-400 mr-2 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Keputusan Tepat!`;
+                feedbackTitle.className = "text-2xl font-bold mb-2 flex items-center text-green-400";
+            } else {
+                selectedBtn.classList.remove('opacity-40');
+                selectedBtn.classList.add('wrong-anim', 'z-10');
+                
+                questionContainer.classList.add('animate-shake');
+                
+                setKreatoState('SAD', "Ups, terdapat ketidaksesuaian konsep. Pelajari penjelasannya untuk pos berikutnya!");
+
+                feedbackTitle.innerHTML = `<svg class="w-7 h-7 text-red-400 mr-2 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg> Analisis Kurang Tepat!`;
+                feedbackTitle.className = "text-2xl font-bold mb-2 flex items-center text-red-400";
+            }
+
+            feedbackText.textContent = explanation;
+            
+            setTimeout(() => {
+                feedbackModal.classList.remove('hidden');
+                feedbackModal.classList.add('animate-pop');
+            }, 350);
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex < questionsData.length) {
+                loadQuestion();
+            } else {
+                showEndScreen();
+            }
+        }
+
+        function showEndScreen() {
+            gameScreen.classList.add('hidden');
+            gameScreen.classList.remove('flex');
+            endScreen.classList.remove('hidden');
+            endScreen.classList.add('fade-in');
+
+            const finalScoreEl = document.getElementById('final-score');
+            const scoreMessageEl = document.getElementById('score-message');
+            const resultIcon = document.getElementById('result-icon');
+            
+            let count = 0;
+            const finalScoreInterval = setInterval(() => {
+                count += 2;
+                if(count >= score) {
+                    count = score;
+                    clearInterval(finalScoreInterval);
+                }
+                finalScoreEl.textContent = count;
+            }, 25);
+
+            const maxScore = questionsData.length * scorePerQuestion;
+            if (score === maxScore) {
+                resultIcon.className = "inline-block p-6 rounded-full mb-2 bg-yellow-500/20 cyber-glow animate-bounce";
+                resultIcon.innerHTML = `<svg class="w-20 h-20 sm:w-24 sm:h-24 text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>`;
+                scoreMessageEl.textContent = "Status: Master Digital Creator & AI Elite!";
+                scoreMessageEl.className = "mt-4 text-yellow-400 font-bold text-lg sm:text-xl tracking-wide";
+            } else if (score >= maxScore * 0.7) {
+                resultIcon.className = "inline-block p-6 rounded-full mb-2 bg-cyan-500/20 cyber-glow animate-pulse";
+                resultIcon.innerHTML = `<svg class="w-20 h-20 sm:w-24 sm:h-24 text-cyan-400 drop-shadow-[0_0_15px_rgba(56,189,248,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                scoreMessageEl.textContent = "Status: Agen Kreator Terverifikasi.";
+                scoreMessageEl.className = "mt-4 text-cyan-400 font-bold text-lg sm:text-xl tracking-wide";
+            } else {
+                resultIcon.className = "inline-block p-6 rounded-full mb-2 bg-slate-800 border border-slate-600";
+                resultIcon.innerHTML = `<svg class="w-20 h-20 sm:w-24 sm:h-24 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>`;
+                scoreMessageEl.textContent = "Status: Perlu Review Ulang Materi Bab I.";
+                scoreMessageEl.className = "mt-4 text-slate-400 font-bold text-lg sm:text-xl tracking-wide";
+            }
+
+            sendDataToAppsScript(studentName, studentClass, score, maxScore);
+        }
+
+        async function sendDataToAppsScript(name, className, finalScore, maxScore) {
+            const statusEl = document.getElementById('submit-status');
+            if (!statusEl) return;
+            
+            if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.trim() === "" || APPS_SCRIPT_URL.includes("AKfycbx...")) {
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML = `<span class="text-amber-400">⚠️ URL Google Apps Script belum dikonfigurasi.</span>`;
+                return;
+            }
+
+            statusEl.classList.remove('hidden');
+            statusEl.innerHTML = `<span class="text-cyan-400 animate-pulse">⏳ Mengirim hasil ke spreadsheet guru...</span>`;
+
+            try {
+                const payload = new URLSearchParams({
+                    nama: name,
+                    kelas: className,
+                    skor: finalScore,
+                    skorMaksimal: maxScore,
+                    materi: "Bab I - Kolaborasi & Editing Konten Digital",
+                    waktu: new Date().toLocaleString('id-ID')
+                });
+
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: payload.toString()
+                });
+
+                statusEl.innerHTML = `<span class="text-emerald-400 font-semibold">✓ Hasil berhasil terkirim ke Spreadsheet!</span>`;
+            } catch (err) {
+                console.error("Gagal mengirim data:", err);
+                statusEl.innerHTML = `<span class="text-rose-400">✕ Gagal mengirim data ke Spreadsheet.</span>`;
+            }
+        }
+
+        function resetGame() {
+            endScreen.classList.add('hidden');
+            endScreen.classList.remove('fade-in');
+            startGame();
+        }
+    </script>
+</body>
+</html>
